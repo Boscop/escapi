@@ -4,3 +4,5 @@ build/
 escapi.opensdf
 escapi.sdf
 /target/*
+*.VC.db
+*.VC.opendb

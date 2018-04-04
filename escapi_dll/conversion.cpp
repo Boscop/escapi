@@ -7,10 +7,11 @@ ConversionFunction gFormatConversions[] =
 	{ MFVideoFormat_RGB32, TransformImage_RGB32 },
 	{ MFVideoFormat_RGB24, TransformImage_RGB24 },
 	{ MFVideoFormat_YUY2, TransformImage_YUY2 },
-	{ MFVideoFormat_NV12, TransformImage_NV12 }
+	{ MFVideoFormat_NV12, TransformImage_NV12 },
+	{ MFVideoFormat_MJPG, TransformImage_MJPG },
 };
 
-const DWORD gConversionFormats = 4;
+const DWORD gConversionFormats = 5;
 
 
 
@@ -20,7 +21,8 @@ void TransformImage_RGB24(
 	const BYTE* aSrc,
 	LONG        aSrcStride,
 	DWORD       aWidthInPixels,
-	DWORD       aHeightInPixels
+	DWORD       aHeightInPixels,
+	DWORD bufferLength
 	)
 {
 	for (DWORD y = 0; y < aHeightInPixels; y++)
@@ -50,7 +52,8 @@ void TransformImage_RGB32(
 	const BYTE* aSrc,
 	LONG        aSrcStride,
 	DWORD       aWidthInPixels,
-	DWORD       aHeightInPixels
+	DWORD       aHeightInPixels,
+	DWORD bufferLength
 	)
 {
 	MFCopyImage(aDest, aDestStride, aSrc, aSrcStride, aWidthInPixels * 4, aHeightInPixels);
@@ -88,7 +91,8 @@ void TransformImage_YUY2(
 	const BYTE* aSrc,
 	LONG        aSrcStride,
 	DWORD       aWidthInPixels,
-	DWORD       aHeightInPixels
+	DWORD       aHeightInPixels,
+	DWORD bufferLength
 	)
 {
 	for (DWORD y = 0; y < aHeightInPixels; y++)
@@ -123,7 +127,8 @@ void TransformImage_NV12(
 	const BYTE* aSrc,
 	LONG aSrcStride,
 	DWORD aWidthInPixels,
-	DWORD aHeightInPixels
+	DWORD aHeightInPixels,
+	DWORD bufferLength
 	)
 {
 	const BYTE* bitsY = aSrc;
@@ -187,4 +192,21 @@ void TransformImage_NV12(
 		bitsCr += aSrcStride;
 		bitsCb += aSrcStride;
 	}
+}
+
+void TransformImage_MJPG(
+	BYTE*       aDest,
+	LONG        aDestStride,
+	const BYTE* aSrc,
+	LONG        aSrcStride,
+	DWORD       aWidthInPixels,
+	DWORD       aHeightInPixels,
+	DWORD bufferLength
+	)
+{
+	memcpy(aDest, aSrc, bufferLength);
+	/*
+	*(DWORD*)aDest = bufferLength;
+	memcpy(aDest + sizeof(DWORD), aSrc, bufferLength);
+	*/
 }

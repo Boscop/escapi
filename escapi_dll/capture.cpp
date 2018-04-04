@@ -128,20 +128,23 @@ STDMETHODIMP CaptureClass::OnReadSample(
 
 					BYTE *scanline0 = NULL;
 					LONG stride = 0;
-					hr = buffer.LockBuffer(mDefaultStride, mCaptureBufferHeight, &scanline0, &stride);
+					DWORD bufferLength;
+					hr = buffer.LockBuffer(mDefaultStride, mCaptureBufferHeight, &scanline0, &stride, &bufferLength);
 
 					DO_OR_DIE_CRITSECTION;
 
 					mConvertFn(
-						(BYTE *)mCaptureBuffer,
+						// (BYTE *)mCaptureBuffer,
+						(BYTE*)gParams[mWhoAmI].mTargetBuf,
 						mCaptureBufferWidth * 4,
 						scanline0,
 						stride,
 						mCaptureBufferWidth,
-						mCaptureBufferHeight
+						mCaptureBufferHeight,
+						bufferLength
 						);
 				}
-				else
+				/*else
 				{
 					// No convert function?
 					if (gOptions[mWhoAmI] & CAPTURE_OPTION_RAWDATA)
@@ -151,7 +154,8 @@ STDMETHODIMP CaptureClass::OnReadSample(
 						VideoBufferLock buffer(mediabuffer);    // Helper object to lock the video buffer.
 						BYTE *scanline0 = NULL;
 						LONG stride = 0;
-						hr = buffer.LockBuffer(mDefaultStride, mCaptureBufferHeight, &scanline0, &stride);
+						DWORD bufferLength;
+						hr = buffer.LockBuffer(mDefaultStride, mCaptureBufferHeight, &scanline0, &stride, &bufferLength);
 						if (stride < 0)
 						{
 							scanline0 += stride * mCaptureBufferHeight;
@@ -173,7 +177,7 @@ STDMETHODIMP CaptureClass::OnReadSample(
 							(i * mCaptureBufferHeight / gParams[mWhoAmI].mHeight) * mCaptureBufferWidth +
 								(j * mCaptureBufferWidth / gParams[mWhoAmI].mWidth)];
 					}
-				}
+				}*/
 				gDoCapture[mWhoAmI] = 1;
 			}
 		}
@@ -405,7 +409,7 @@ HRESULT CaptureClass::setConversionFunction(REFGUID aSubtype)
 
 	// If raw data is desired, skip conversion
 	if (gOptions[mWhoAmI] & CAPTURE_OPTION_RAWDATA)
-		return S_OK; 
+		return S_OK;
 
 	for (DWORD i = 0; i < gConversionFormats; i++)
 	{
@@ -519,7 +523,7 @@ int CaptureClass::isMediaOk(IMFMediaType *aType, int aIndex)
 	return found;
 }
 
-int CaptureClass::scanMediaTypes(unsigned int aWidth, unsigned int aHeight)
+int CaptureClass::scanMediaTypes(unsigned int aWidth, unsigned int aHeight, float min_framerate)
 {
 	HRESULT hr;
 	HRESULT nativeTypeErrorCode = S_OK;
@@ -538,7 +542,7 @@ int CaptureClass::scanMediaTypes(unsigned int aWidth, unsigned int aHeight)
 
 		if (nativeTypeErrorCode != S_OK) continue;
 
-		// get the media type 
+		// get the media type
 		GUID nativeGuid = { 0 };
 		hr = nativeType->GetGUID(MF_MT_SUBTYPE, &nativeGuid);
 
@@ -548,6 +552,15 @@ int CaptureClass::scanMediaTypes(unsigned int aWidth, unsigned int aHeight)
 		{
 			UINT32 width, height;
 			hr = MFGetAttributeSize(nativeType, MF_MT_FRAME_SIZE, &width, &height);
+
+			if (FAILED(hr)) return bestfit;
+
+
+			UINT32 num;
+			UINT32 denum;
+			hr = MFGetAttributeRatio(nativeType, MF_MT_FRAME_RATE, &num, &denum);
+
+			float framerate = ((float) num) / denum;
 
 			if (FAILED(hr)) return bestfit;
 
@@ -563,7 +576,7 @@ int CaptureClass::scanMediaTypes(unsigned int aWidth, unsigned int aHeight)
 			if (aWidth == width && aHeight == height) // ..but perfect match is a perfect match
 				error = 0;
 
-			if (besterror > error)
+			if (besterror > error && framerate >= min_framerate)
 			{
 				besterror = error;
 				bestfit = count;
@@ -648,7 +661,7 @@ HRESULT CaptureClass::initCapture(int aDevice)
 
 		DO_OR_DIE_CRITSECTION;
 
-		int preferredmode = scanMediaTypes(gParams[mWhoAmI].mWidth, gParams[mWhoAmI].mHeight);
+		int preferredmode = scanMediaTypes(gParams[mWhoAmI].mWidth, gParams[mWhoAmI].mHeight, gParams[mWhoAmI].mFramerate);
 		mUsedIndex = preferredmode;
 
 		hr = mReader->GetNativeMediaType(

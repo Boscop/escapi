@@ -2,14 +2,17 @@
 
 struct SimpleCapParams
 {
-	/* Target buffer. 
-	 * Must be at least mWidth * mHeight * sizeof(int) of size! 
+	/* Target buffer.
+	 * Must be at least mWidth * mHeight * sizeof(int) of size!
 	 */
 	int * mTargetBuf;
 	/* Buffer width */
 	int mWidth;
 	/* Buffer height */
 	int mHeight;
+
+	/* Minimum framerate */
+	float mFramerate;
 };
 
 enum CAPTURE_PROPETIES
@@ -42,8 +45,8 @@ extern int setupESCAPI();
 /* return the number of capture devices found */
 typedef int (*countCaptureDevicesProc)();
 
-/* initCapture tries to open the video capture device. 
- * Returns 0 on failure, 1 on success. 
+/* initCapture tries to open the video capture device.
+ * Returns 0 on failure, 1 on success.
  * Note: Capture parameter values must not change while capture device
  *       is in use (i.e. between initCapture and deinitCapture).
  *       Do *not* free the target buffer, or change its pointer!
@@ -65,7 +68,7 @@ typedef void (*getCaptureDeviceNameProc)(unsigned int deviceno, char *namebuffer
 /* Returns the ESCAPI DLL version. 0x200 for 2.0 */
 typedef int (*ESCAPIVersionProc)();
 
-/* 
+/*
 	On properties -
 	- Not all cameras support properties at all.
 	- Not all properties can be set to auto.
@@ -98,9 +101,9 @@ typedef int (*initCaptureWithOptionsProc)(unsigned int deviceno, struct SimpleCa
 
 // Options accepted by above:
 // Return raw data instead of converted rgb. Using this option assumes you know what you're doing.
-#define CAPTURE_OPTION_RAWDATA 1 
+#define CAPTURE_OPTION_RAWDATA 1
 // Mask to check for valid options - all options OR:ed together.
-#define CAPTURE_OPTIONS_MASK (CAPTURE_OPTION_RAWDATA) 
+#define CAPTURE_OPTIONS_MASK (CAPTURE_OPTION_RAWDATA)
 
 
 #ifndef ESCAPI_DEFINITIONS_ONLY
